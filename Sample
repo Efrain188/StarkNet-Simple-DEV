@@ -1,0 +1,75 @@
+StarkNet Simple Dev Sample.
+
+下面是一个简单的存款和取款功能的智能合约示例：
+
+// SPDX-License-Identifier: MIT  
+pragma solidity ^0.8.0;  
+  
+contract StarkNetExample {  
+    // 存储用户的余额  
+    mapping(address => uint256) private balances;  
+  
+    // 存款事件  
+    event Deposit(address indexed user, uint256 amount);  
+  
+    // 取款事件  
+    event Withdrawal(address indexed user, uint256 amount);  
+  
+    // 存款函数  
+    function deposit() external payable {  
+        uint256 amount = msg.value;  
+        balances[msg.sender] += amount;  
+        emit Deposit(msg.sender, amount);  
+    }  
+  
+    // 取款函数  
+    function withdraw(uint256 amount) external {  
+        require(balances[msg.sender] >= amount, "Insufficient balance");  
+        balances[msg.sender] -= amount;  
+        payable(msg.sender).transfer(amount);  
+        emit Withdrawal(msg.sender, amount);  
+    }  
+  
+    // 获取用户余额  
+    function getBalance() external view returns (uint256) {  
+        return balances[msg.sender];  
+    }  
+}
+
+
+
+下面这个示例实现了一个简单的去中心化交易所（DEX），支持两个代币之间的交换。
+
+// SPDX-License-Identifier: MIT  
+pragma solidity ^0.8.0;  
+  
+interface IERC20 {  
+    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool success);  
+    function decimals() external view returns (uint8);  
+}  
+  
+contract DEX {  
+    mapping(address => mapping(address => uint256)) public prices; // 记录代币之间的价格  
+    mapping(address => bool) public isTokenListed; // 记录代币是否已经在交易所上市  
+  
+    // 上市一个新的代币  
+    function listToken(address tokenAddress) external {  
+        require(!isTokenListed[tokenAddress], "Token is already listed");  
+        isTokenListed[tokenAddress] = true;  
+    }  
+  
+    // 设置代币之间的价格  
+    function setPrice(address baseToken, address quoteToken, uint256 price) external {  
+        require(isTokenListed[baseToken] && isTokenListed[quoteToken], "Both tokens must be listed");  
+        prices[baseToken][quoteToken] = price;  
+    }  
+  
+    // 交换代币  
+    function swapTokens(address baseToken, address quoteToken, uint256 amount) external {  
+        require(isTokenListed[baseToken] && isTokenListed[quoteToken], "Both tokens must be listed");  
+        uint256 price = prices[baseToken][quoteToken];  
+        uint256 receivedAmount = amount * price;  
+        IERC20(baseToken).transferFrom(msg.sender, address(this), amount);  
+        IERC20(quoteToken).transferFrom(address(this), msg.sender, receivedAmount);  
+    }  
+}
